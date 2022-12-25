@@ -1,0 +1,27 @@
+server:
+  port: 9292
+  servlet:
+    context-path: /user-api/v1
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/user_db?createIfNotExists=true
+    username: root
+    password: root
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+  application:
+    name: USER-SERVICE
+
+
+address-service:
+  name: ADDRESS-SERVICE
+  base-url: http://localhost:9191/address-api/v1
+  path: /address
