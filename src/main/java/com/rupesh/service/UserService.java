@@ -1,13 +1,17 @@
 package com.rupesh.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.rupesh.clients.AddressClient;
 import com.rupesh.entity.User;
+import com.rupesh.mapper.UserMapper;
 import com.rupesh.model.AddressDTO;
 import com.rupesh.model.UserDTO;
+import com.rupesh.model.UserResponseDTO;
+import com.rupesh.pagination.PageRequest;
 import com.rupesh.repository.UserRepository;
+import com.rupesh.util.convertor.UserConvertor;
 import com.rupesh.util.global.GlobalResponse;
 import com.rupesh.util.global.GlobalUtil;
-import com.rupesh.util.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,22 +21,25 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static com.rupesh.util.convertor.UserConvertor.toEntity;
 import static com.rupesh.util.helper.UserConstants.*;
 import static com.rupesh.util.helper.UserHelper.generatePassword;
 import static com.rupesh.util.helper.UserHelper.generateUserId;
-import static com.rupesh.util.mapper.UserMapper.toEntity;
 
 @Service
 public class UserService implements IUserService {
 
     private final UserRepository userRepository;
     private final AddressClient addressClient;
+    private final UserMapper userMapper;
 
     @Autowired
     public UserService(UserRepository userRepository,
-                       AddressClient addressClient) {
+                       AddressClient addressClient,
+                       UserMapper userMapper) {
         this.userRepository = userRepository;
         this.addressClient = addressClient;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -54,7 +61,7 @@ public class UserService implements IUserService {
                         String.format(USER_SAVED_SUCCESS, userDTO.getEmail()),
                         HttpStatus.CREATED,
                         Optional.ofNullable(savedUser)
-                                .map(UserMapper::toDto)
+                                .map(UserConvertor::toDto)
                                 .orElse(null)
                 );
     }
@@ -70,8 +77,8 @@ public class UserService implements IUserService {
                 .globalResponse(
                         String.format(USER_UPDATED_SUCCESS, userDTO.getEmail()),
                         HttpStatus.CREATED,
-                        Optional.ofNullable(userRepository.save(UserMapper.toEntity(userDTO)))
-                                .map(UserMapper::toDto)
+                        Optional.ofNullable(userRepository.save(UserConvertor.toEntity(userDTO)))
+                                .map(UserConvertor::toDto)
                                 .orElse(null)
                 );
     }
@@ -80,7 +87,7 @@ public class UserService implements IUserService {
     public GlobalResponse<UserDTO> getUserByUsername(final String username) {
 
         final UserDTO userDTO = userRepository.findByUsername(username)
-                .map(UserMapper::toDto)
+                .map(UserConvertor::toDto)
                 .orElseThrow(() -> new RuntimeException(String.format(USER_NOT_FOUND_BY_USERNAME, username)));
 
         userDTO.setAddress(getAddress(userDTO.getUserId()));
@@ -97,7 +104,7 @@ public class UserService implements IUserService {
     public GlobalResponse<UserDTO> getUserByUserId(final String userId) {
 
         final UserDTO userDTO = userRepository.findByUserId(userId)
-                .map(UserMapper::toDto)
+                .map(UserConvertor::toDto)
                 .orElseThrow(() -> new RuntimeException(String.format(USER_NOT_FOUND_BY_USER_ID, userId)));
         userDTO.setAddress(getAddress(userId));
 
@@ -114,7 +121,7 @@ public class UserService implements IUserService {
     @Override
     public GlobalResponse<?> getAllUser() {
         final List<UserDTO> userList = Optional.ofNullable(userRepository.findAll())
-                .map(UserMapper::toDtoList)
+                .map(UserConvertor::toDtoList)
                 .orElse(null);
 
         userList.forEach(user -> {
@@ -140,6 +147,21 @@ public class UserService implements IUserService {
                         String.format(USER_FOUND_BY_USER_ID, userId),
                         HttpStatus.OK,
                         null);
+    }
+
+    @Override
+    public GlobalResponse<Page<UserResponseDTO>> filterUser(final int page, final int size) {
+
+        Page<UserResponseDTO> pageData = new Page(page, size);
+        pageData = userMapper.allUsers(pageData);
+        List<UserResponseDTO> userList = pageData.getRecords();
+        userList.forEach(user -> user.setAddress(getAddress(user.getUserId())));
+
+        return GlobalUtil
+                .globalResponse(
+                        String.format(ALL_USER_FOUND),
+                        HttpStatus.OK,
+                        pageData);
     }
 
     private AddressDTO getAddress(final String userId) {

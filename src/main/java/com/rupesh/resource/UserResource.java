@@ -1,6 +1,7 @@
 package com.rupesh.resource;
 
 import com.rupesh.model.UserDTO;
+import com.rupesh.pagination.PageRequest;
 import com.rupesh.service.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,12 @@ public class UserResource {
     @GetMapping(path = "/all")
     public ResponseEntity<?> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUser());
+    }
+
+    @GetMapping(path = "/filter")
+    public ResponseEntity<?> filterUser(@RequestParam(value = "pageNum", defaultValue = "1") int page,
+                                        @RequestParam(value = "pageSize", defaultValue = "10") int limit) {
+        return ResponseEntity.ok(userService.filterUser(page, limit));
     }
 
     @GetMapping(path = "/by-user-id")

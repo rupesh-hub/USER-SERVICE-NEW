@@ -25,3 +25,12 @@ address-service:
   name: ADDRESS-SERVICE
   base-url: http://localhost:9191/address-api/v1
   path: /address
+
+mybatis-plus:
+  configuration:
+    #  specification If the database field is order_id, then the entity field should be written as orderId
+    map-underscore-to-camel-case: true
+    pagination:
+      enabled: true
+  #Mybatis mapper.xml file location
+  mapper-locations: classpath*:**/sql/*.xml
